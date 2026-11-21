@@ -1,101 +1,52 @@
-# Sonora — música, descoberta e Creator Lab
+# Sonora v1.0 — Player musical online
 
-**Player web independente, em português, pronto para GitHub Pages.** O Sonora reúne músicas locais, descoberta de faixas com licença indicada pela fonte, recomendações pessoais e uma oficina de projetos curtos inacabados.
+O Sonora v1.0 é um player web para descobrir, organizar e ouvir músicas online. O projeto é publicado no GitHub Pages e não possui edição desktop/local separada nesta versão.
 
-![Sonora](assets/sonora-icon.svg)
+## Catálogo online
 
-## Recursos
+O catálogo usa a API oficial do **Audius** para carregar faixas em alta, pesquisar por música/artista/estilo e reproduzir áudio pelo endpoint oficial de streaming. A aplicação tenta os endpoints públicos oficiais do Audius e mantém a origem da faixa visível.
 
-### Player musical
-- Biblioteca local com importação por botão ou arrastar e soltar.
-- Reconhecimento básico de tags ID3 em MP3.
-- Player com fila, aleatório, repetir, volume e progresso.
-- Favoritos, histórico e playlists.
-- Busca online no Jamendo e consulta do ccMixter, com separação entre biblioteca local e resultados online.
-- Download de faixas Jamendo somente quando a API informa que o download é permitido.
-- Recomendações que usam reproduções, artistas, estilos e favoritos registrados localmente.
+- Catálogo em alta e pesquisa.
+- Categorias musicais para descoberta.
+- Reprodução no player integrado, sem baixar/re-hospedar o áudio.
+- Link para a página original do artista.
+- O app não promete que todas as faixas sejam livres de direitos autorais. Os direitos pertencem aos criadores; reutilização fora do streaming deve seguir a licença/permissões informadas pelo artista.
+- As consultas de leitura do Audius normalmente funcionam sem credencial de desenvolvedor; limites podem se aplicar. Uma chave pode ser usada futuramente para elevar a cota, sem colocá-la no código público.
 
-### Sonora Creator Lab — Reels inacabados
-- 100 rascunhos iniciais e editáveis (não são vídeos prontos nem publicações).
-- Criação de novos projetos, pesquisa, filtros por estado e indicador de progresso.
-- Campos para título, ideia/legenda e etapa do projeto.
-- Anexo e pré-visualização de um vídeo por rascunho.
-- **Limite de seleção: 1 GB (1.000.000.000 bytes) por vídeo.**
-- Vídeos criptografados em blocos AES-GCM de 8 MiB, sem carregar o arquivo inteiro na memória durante a gravação.
-- Barra de progresso durante a criptografia e verificação aproximada do espaço disponível.
+Documentação: https://docs.audius.co/api/
 
-> O limite de 1 GB é o máximo aceito pelo Sonora, não uma garantia de que todo navegador terá espaço para armazenar esse tamanho. Cotas do IndexedDB, espaço livre e memória variam por dispositivo. A pré-visualização de vídeos muito grandes pode exigir bastante memória porque o navegador precisa remontar os blocos descriptografados para reproduzir.
+## Recursos do Sonora
 
-### Experiência e privacidade
-- Tutorial animado com o mascote Lumi para quem está começando.
-- Conta local no navegador com derivação de chave PBKDF2-SHA-256 e cofre AES-GCM.
-- IndexedDB para guardar preferências, biblioteca e mídias cifradas.
-- PWA com cache dos arquivos estáticos para reabrir a interface offline.
-- Layout responsivo para computador, tablet e celular.
+- Player com play/pause, faixa anterior/próxima, volume, repetição e aleatório.
+- Busca e catálogo online Audius.
+- Biblioteca de arquivos que o usuário seleciona no próprio navegador (opcional).
+- Arrastar e soltar arquivos de áudio.
+- Playlists, favoritos e histórico.
+- Recomendações locais baseadas nas reproduções e favoritos.
+- Conta local do navegador com senha derivada por PBKDF2 e dados do cofre protegidos por AES-GCM.
+- Tutorial interativo com Lumi.
+- Área de rascunhos de Reels, com vídeos guardados no armazenamento do navegador.
 
 ## Publicar no GitHub Pages
 
-1. Crie um repositório no GitHub, por exemplo `sonora`.
-2. Extraia este projeto e envie **o conteúdo desta pasta para a raiz** do repositório (o `index.html` precisa ficar na raiz).
-3. Faça push para a branch `main`.
-4. Abra **Settings → Pages**.
-5. Em **Build and deployment**, selecione **GitHub Actions**.
-6. O workflow `.github/workflows/pages.yml` publica o site automaticamente após o push.
+1. Abra **Settings → Pages** no repositório.
+2. Em **Build and deployment**, escolha **Deploy from a branch**.
+3. Selecione a branch `main` e a pasta `/(root)`.
+4. Salve e aguarde a publicação.
 
-O site é estático: não precisa de Node.js, banco de dados ou servidor próprio para publicar.
+O arquivo `index.html` fica na raiz do repositório. O workflow em `.github/workflows/pages.yml`, se presente, pode ser usado para automatizar a publicação.
 
-## Executar localmente no Windows
+## Privacidade e armazenamento
 
-1. Instale Python 3, caso ainda não esteja instalado: https://www.python.org/downloads/
-2. Extraia o projeto.
-3. Dê dois cliques em `iniciar.bat`.
-4. O Sonora abrirá em `http://127.0.0.1:8765` (ou outra porta livre próxima).
-5. Deixe a janela do terminal aberta enquanto usa o app. Pressione `Ctrl+C` nela para encerrar.
+O login do Sonora nesta versão é local ao navegador; não é uma conta sincronizada entre dispositivos. Músicas importadas pelo usuário, playlists e preferências não são enviadas ao GitHub. O áudio do catálogo é transmitido diretamente pelo Audius.
 
-Também é possível usar uma extensão de servidor local no VS Code.
+## Limitações conhecidas
 
-## Segurança e limites conhecidos
-
-- A conta é local ao navegador. Não existe login compartilhado entre dispositivos, sincronização online, recuperação de senha ou painel de administração.
-- A senha não é guardada em texto puro. Se esquecer a senha, os dados criptografados não poderão ser recuperados.
-- A criptografia local não protege contra malware, extensões maliciosas ou acesso ao navegador já desbloqueado.
-- Os arquivos importados permanecem no dispositivo; não são enviados ao GitHub.
-- Não publique chaves privadas, tokens ou segredos neste repositório.
-- O Jamendo vem com um identificador público de demonstração (`709fa152`). Para uso contínuo, configure seu próprio `client_id` nas Preferências e confira as regras atuais da API.
-- A consulta ao ccMixter pode depender de CORS e abre a página original para reprodução e conferência da licença.
-- O player não extrai áudio ou vídeo do YouTube nem do Spotify.
-- O Creator Lab ainda não oferece timeline multipista, corte, transições, legendas automáticas ou exportação final de Reels.
-
-## Estrutura
-
-```text
-SonoraPlayer_Web/
-├── .github/workflows/pages.yml
-├── assets/sonora-icon.svg
-├── docs/SECURITY.md
-├── docs/ROADMAP.md
-├── index.html
-├── app.js
-├── styles.css
-├── reels.css
-├── manifest.webmanifest
-├── service-worker.js
-├── local_server.py
-└── iniciar.bat
-```
-
-## Desenvolvimento
-
-- HTML, CSS e JavaScript puro; sem etapa de build.
-- Para verificar sintaxe do JavaScript: `node --check app.js`.
-- Para testar no navegador, execute `iniciar.bat` e acesse o endereço local.
-- Pull requests são bem-vindos. Consulte `CONTRIBUTING.md`.
+- A disponibilidade de faixas depende do catálogo e das regras de streaming do Audius.
+- Algumas faixas podem deixar de estar disponíveis, ser removidas ou ter restrição regional.
+- O navegador precisa de internet para carregar o catálogo e transmitir as músicas.
+- O armazenamento de arquivos locais depende da cota que o navegador permite.
 
 ## Licença
 
-Projeto distribuído sob a licença MIT. Catálogos, marcas e conteúdos externos continuam sujeitos às licenças e aos termos de seus respectivos titulares.
-
-
-## Versão local
-
-O banner no topo do site oferece o download da edição local em `downloads/Sonora_Local_v1.1.0.zip`. Ela roda no computador com Python 3, sem depender do GitHub Pages. Recursos de catálogo online continuam precisando de conexão com a internet.
+Consulte o arquivo LICENSE deste repositório para a licença do código. Essa licença não concede direitos sobre as músicas de terceiros disponibilizadas pelo Audius.

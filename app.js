@@ -1,6 +1,5 @@
 'use strict';
 
-const JAMENDO_TEST_ID = '709fa152';
 const DB_NAME = 'sonora-vault-v1';
 const DB_VERSION = 2;
 const MAX_REEL_VIDEO_BYTES = 1_000_000_000; // 1 GB decimal
@@ -9,8 +8,8 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const state = {
   user: null, key: null, localTracks: [], onlineTracks: [], savedOnline: [], playlists: [], favorites: [], history: [],
-  current: null, currentObjectUrl: null, reelPreviewUrl: null, queue: [], queueIndex: -1, source: 'jamendo',
-  libraryFilter: 'all', repeat: false, shuffle: false, activePlaylist: null, clientId: JAMENDO_TEST_ID,
+  current: null, currentObjectUrl: null, reelPreviewUrl: null, queue: [], queueIndex: -1,
+  libraryFilter: 'all', repeat: false, shuffle: false, activePlaylist: null,
   tutorialStep: 0, tutorialSteps: [], reelsDrafts: [], reelsInitialized: false, reelFilter: 'all', reelSearch: '', reelsVisible: 20,
 };
 const audio = $('#audio-element');
@@ -49,7 +48,7 @@ async function encryptText(text,key) { const iv=crypto.getRandomValues(new Uint8
 async function decryptText(item,key) { const clear=await crypto.subtle.decrypt({name:'AES-GCM',iv:fromB64(item.iv)},key,fromB64(item.data)); return dec.decode(clear); }
 async function saveVault() {
   if(!state.key) return;
-  const payload={user:state.user,playlists:state.playlists,favorites:state.favorites,history:state.history,clientId:state.clientId,savedOnline:state.savedOnline,reelsDrafts:state.reelsDrafts,reelsInitialized:state.reelsInitialized};
+  const payload={user:state.user,playlists:state.playlists,favorites:state.favorites,history:state.history,savedOnline:state.savedOnline,reelsDrafts:state.reelsDrafts,reelsInitialized:state.reelsInitialized};
   await dbPut('vault',{id:'app-state',...(await encryptText(JSON.stringify(payload),state.key))});
 }
 async function saveTrack(track) {
@@ -62,7 +61,7 @@ async function saveTrack(track) {
 async function loadVault() {
   const vault=await dbAll('vault');
   const app=vault.find(x=>x.id==='app-state');
-  if(app){ const data=JSON.parse(await decryptText(app,state.key)); state.user=data.user;state.playlists=data.playlists||[];state.favorites=data.favorites||[];state.history=data.history||[];state.clientId=data.clientId||JAMENDO_TEST_ID;state.savedOnline=data.savedOnline||[];state.reelsDrafts=data.reelsDrafts||[];state.reelsInitialized=data.reelsInitialized===true; }
+  if(app){ const data=JSON.parse(await decryptText(app,state.key)); state.user=data.user;state.playlists=data.playlists||[];state.favorites=data.favorites||[];state.history=data.history||[];state.savedOnline=data.savedOnline||[];state.reelsDrafts=data.reelsDrafts||[];state.reelsInitialized=data.reelsInitialized===true; }
   state.localTracks=[];
   for(const item of vault.filter(x=>x.id.startsWith('track:'))){
     try { const clear=await crypto.subtle.decrypt({name:'AES-GCM',iv:fromB64(item.iv)},state.key,fromB64(item.data)); const payload=JSON.parse(dec.decode(clear)); const bytes=fromB64(payload.audio); const mime=payload.meta.mime||'audio/mpeg'; const file=new File([bytes],payload.meta.fileName||'audio', {type:mime}); state.localTracks.push({...payload.meta,file}); }
@@ -86,50 +85,159 @@ function getTrackById(id){return state.localTracks.find(t=>t.id===id)||state.onl
 function trackKey(t){return `${t.source}:${t.id}`;}
 function isFavorite(t){return state.favorites.includes(trackKey(t));}
 function toggleFavorite(t){const k=trackKey(t);const was=isFavorite(t);state.favorites=was?state.favorites.filter(x=>x!==k):[...state.favorites,k];if(t.source!=='local'&&!was&&!state.savedOnline.some(x=>x.id===t.id))state.savedOnline.unshift({...t});saveVault();renderAll();if($('#view-discover').classList.contains('active'))renderOnline();if(state.current?.id===t.id)updatePlayerLike();}
-function sourceLabel(t){return t.source==='local'?'LOCAL':t.source==='ccmixter'?'CCMIXTER':'JAMENDO';}
-function licenseLabel(t){if(t.source==='local')return 'ARQUIVO LOCAL';if(t.source==='ccmixter')return 'CC BY · FONTE';const url=String(t.license||'');const match=url.match(/licenses\/([^/]+)/i);const code=match?match[1].replace(/-/g,' ').toUpperCase():'';return code?`${t.audiodownload_allowed?'DOWNLOAD OK · ':'STREAM · '}CC ${code}`:(t.audiodownload_allowed?'DOWNLOAD OK':'LICENÇA NA ORIGEM');}
-function createCover(track,large=false){const [a,b]=paletteFor(track.title+track.artist);const symbol=track.source==='local'?'♫':track.source==='ccmixter'?'♪':'✦';return `<div class="${large?'now-cover':'cover-art'}" style="--cover-a:${a};--cover-b:${b}">${large?'<span>♫</span>':`<div class="cover-orbit"></div><span class="cover-symbol">${symbol}</span>`}</div>`;}
-function musicCard(t,index=0){const [a,b]=paletteFor(t.title+t.artist);const canDownload=t.source==='jamendo'&&t.audiodownload_allowed&&t.audiodownload;return `<article class="music-card" style="animation-delay:${Math.min(index,8)*.055}s"><div class="cover-art" style="--cover-a:${a};--cover-b:${b}">${t.image&&/^https:\/\//i.test(t.image)?`<img src="${safeText(t.image)}" alt="" loading="lazy">`:''}<div class="cover-orbit"></div><span class="cover-symbol">${t.source==='local'?'♫':t.source==='ccmixter'?'♪':'✦'}</span><button class="cover-play" data-play="${safeText(t.id)}" title="Tocar">▶</button></div><div class="card-info"><strong title="${safeText(t.title)}">${safeText(t.title)}</strong><small>${safeText(t.artist)}</small><div class="card-meta"><span class="license-tag">${safeText(licenseLabel(t))}</span><button class="card-like ${isFavorite(t)?'liked':''}" data-like="${safeText(t.id)}" title="Favoritar">${isFavorite(t)?'♥':'♡'}</button></div><div class="card-actions"><button data-add-playlist="${safeText(t.id)}">＋ Playlist</button>${canDownload?`<button data-download="${safeText(t.id)}">↓ Baixar</button>`:''}</div></div></article>`;}
-function trackRow(t,index=0){const canDownload=t.source==='jamendo'&&t.audiodownload_allowed&&t.audiodownload;return `<div class="track-row"><span class="track-index">${String(index+1).padStart(2,'0')}</span><div class="track-mini-cover" style="--cover-a:${paletteFor(t.title)[0]};--cover-b:${paletteFor(t.artist)[1]}">${t.image&&/^https:\/\//i.test(t.image)?`<img src="${safeText(t.image)}" alt="" loading="lazy">`:(t.source==='local'?'♫':'♪')}</div><div class="track-title"><strong>${safeText(t.title)}</strong><small>${safeText(t.artist)}</small></div><div class="track-album">${safeText(t.album||sourceLabel(t))}</div><span class="track-duration">${t.duration?formatTime(t.duration):'—'}</span><button class="row-action like-action" data-like="${safeText(t.id)}" title="Favoritar">${isFavorite(t)?'♥':'♡'}</button><button class="row-action playlist-action" data-add-playlist="${safeText(t.id)}" title="Adicionar à playlist">＋</button><button class="row-action play-action" data-play="${safeText(t.id)}" title="Tocar">▶</button>${canDownload?`<button class="row-action download-action" data-download="${safeText(t.id)}" title="Baixar">↓</button>`:''}</div>`;}
-function bindTrackActions(root=document){$$('[data-play]',root).forEach(btn=>btn.addEventListener('click',()=>{const track=getTrackById(btn.dataset.play);if(track)playTrack(track);}));$$('[data-like]',root).forEach(btn=>btn.addEventListener('click',()=>{const track=getTrackById(btn.dataset.like);if(track)toggleFavorite(track);}));$$('[data-add-playlist]',root).forEach(btn=>btn.addEventListener('click',()=>{const track=getTrackById(btn.dataset.addPlaylist);if(track)choosePlaylist(track);}));$$('[data-download]',root).forEach(btn=>btn.addEventListener('click',()=>{const track=getTrackById(btn.dataset.download);if(track?.audiodownload_allowed&&track.audiodownload){const a=document.createElement('a');a.href=track.audiodownload;a.target='_blank';a.rel='noopener';a.download=`${track.title}.mp3`;document.body.append(a);a.click();a.remove();showToast('Abrindo o download autorizado pela fonte.');}}));}
+function sourceLabel(t){return t.source==='local'?'LOCAL':'AUDIOUS';}
+function licenseLabel(t){
+  if(t.source==='local')return 'ARQUIVO LOCAL';
+  return 'STREAMING OFICIAL · AUDIOUS';
+}
+function createCover(track,large=false){
+  const [a,b]=paletteFor(track.title+track.artist);
+  const symbol=track.source==='local'?'♫':'✦';
+  return '<div class="'+(large?'now-cover':'cover-art')+'" style="--cover-a:'+a+';--cover-b:'+b+'">'+
+    (large?'<span>♫</span>':'<div class="cover-orbit"></div><span class="cover-symbol">'+symbol+'</span>')+'</div>';
+}
+function musicCard(t,index=0){
+  const [a,b]=paletteFor(t.title+t.artist);
+  const image=t.image&&/^https:\/\//i.test(t.image)?'<img src="'+safeText(t.image)+'" alt="" loading="lazy">':'';
+  const original=t.originalUrl?'<a class="card-source-link" href="'+safeText(t.originalUrl)+'" target="_blank" rel="noopener noreferrer">Artista ↗</a>':'';
+  return '<article class="music-card" style="animation-delay:'+Math.min(index,8)*.055+'s">'+
+    '<div class="cover-art" style="--cover-a:'+a+';--cover-b:'+b+'">'+image+
+    '<div class="cover-orbit"></div><span class="cover-symbol">✦</span>'+
+    '<button class="cover-play" data-play="'+safeText(t.id)+'" title="Tocar">▶</button></div>'+
+    '<div class="card-info"><strong title="'+safeText(t.title)+'">'+safeText(t.title)+'</strong>'+
+    '<small>'+safeText(t.artist)+'</small><div class="card-meta"><span class="license-tag">'+licenseLabel(t)+'</span>'+
+    '<button class="card-like '+(isFavorite(t)?'liked':'')+'" data-like="'+safeText(t.id)+'" title="Favoritar">'+(isFavorite(t)?'♥':'♡')+'</button></div>'+
+    '<div class="card-actions"><button data-add-playlist="'+safeText(t.id)+'">＋ Playlist</button>'+original+'</div></div></article>';
+}
+function trackRow(t,index=0){
+  const original=t.originalUrl?'<a class="row-action source-action" href="'+safeText(t.originalUrl)+'" target="_blank" rel="noopener noreferrer" title="Abrir no Audius">↗</a>':'';
+  return '<div class="track-row"><span class="track-index">'+String(index+1).padStart(2,'0')+'</span>'+
+    '<div class="track-mini-cover" style="--cover-a:'+paletteFor(t.title)[0]+';--cover-b:'+paletteFor(t.artist)[1]+'">'+
+    (t.image&&/^https:\/\//i.test(t.image)?'<img src="'+safeText(t.image)+'" alt="" loading="lazy">':'♫')+'</div>'+
+    '<div class="track-title"><strong>'+safeText(t.title)+'</strong><small>'+safeText(t.artist)+'</small></div>'+
+    '<div class="track-album">'+safeText(t.album||sourceLabel(t))+'</div><span class="track-duration">'+(t.duration?formatTime(t.duration):'—')+'</span>'+
+    '<button class="row-action like-action" data-like="'+safeText(t.id)+'" title="Favoritar">'+(isFavorite(t)?'♥':'♡')+'</button>'+
+    '<button class="row-action playlist-action" data-add-playlist="'+safeText(t.id)+'" title="Adicionar à playlist">＋</button>'+
+    '<button class="row-action play-action" data-play="'+safeText(t.id)+'" title="Tocar">▶</button>'+original+'</div>';
+}
+$$('[data-play]',root).forEach(btn=>btn.addEventListener('click',()=>{const track=getTrackById(btn.dataset.play);if(track)playTrack(track);}));$$('[data-like]',root).forEach(btn=>btn.addEventListener('click',()=>{const track=getTrackById(btn.dataset.like);if(track)toggleFavorite(track);}));$$('[data-add-playlist]',root).forEach(btn=>btn.addEventListener('click',()=>{const track=getTrackById(btn.dataset.addPlaylist);if(track)choosePlaylist(track);}));$$('[data-download]',root).forEach(btn=>btn.addEventListener('click',()=>{const track=getTrackById(btn.dataset.download);if(track?.audiodownload_allowed&&track.audiodownload){const a=document.createElement('a');a.href=track.audiodownload;a.target='_blank';a.rel='noopener';a.download=`${track.title}.mp3`;document.body.append(a);a.click();a.remove();showToast('Abrindo o download autorizado pela fonte.');}}));}
 function renderHome(){const recommendations=buildRecommendations();$('#recommendation-grid').innerHTML=recommendations.length?recommendations.slice(0,4).map(musicCard).join(''):`<div class="empty-state">Adicione músicas ou faça uma busca online para começar a treinar seu algoritmo.</div>`;const recent=state.history.slice(0,5).map(h=>getTrackById(h.id)||h.track).filter(Boolean);$('#recent-list').innerHTML=recent.length?recent.map(trackRow).join(''):`<div class="empty-state">Suas reproduções recentes vão aparecer aqui.</div>`;bindTrackActions($('#view-home'));}
 function renderLibrary(){let tracks=[...state.localTracks];if(state.libraryFilter==='recent')tracks.sort((a,b)=>b.addedAt-a.addedAt);if(state.libraryFilter==='favorites')tracks=tracks.filter(isFavorite);$('#library-count').textContent=`${tracks.length} ${tracks.length===1?'faixa':'faixas'}`;$('#library-list').innerHTML=tracks.length?tracks.map(trackRow).join(''):`<div class="empty-state">Sua biblioteca ainda está vazia. Arraste uma música para esta página ou use “Importar músicas”.</div>`;bindTrackActions($('#view-library'));}
 function renderFavorites(){const all=[...state.localTracks,...state.onlineTracks,...state.savedOnline];const tracks=state.favorites.map(k=>all.find(t=>trackKey(t)===k)).filter(Boolean);$('#favorites-list').innerHTML=tracks.length?tracks.map(trackRow).join(''):`<div class="empty-state">Toque no coração de uma faixa para guardá-la aqui.</div>`;bindTrackActions($('#view-favorites'));}
 function renderPlaylists(){const root=$('#playlist-cards');root.innerHTML=state.playlists.length?state.playlists.map((p,i)=>`<div class="playlist-card" data-open-playlist="${safeText(p.id)}"><div class="playlist-art" style="background:linear-gradient(135deg,${paletteFor(p.name)[0]},${paletteFor(p.name)[1]})">♫</div><strong>${safeText(p.name)}</strong><p>${p.tracks.length} ${p.tracks.length===1?'faixa':'faixas'}</p></div>`).join(''):`<div class="empty-state">Crie sua primeira playlist e organize as músicas por clima, momento ou estilo.</div>`;$$('[data-open-playlist]').forEach(el=>el.addEventListener('click',()=>openPlaylist(el.dataset.openPlaylist)));renderSidebarPlaylists();}
 function renderSidebarPlaylists(){$('#sidebar-playlists-list').innerHTML=state.playlists.slice(0,5).map(p=>`<button class="sidebar-playlist" data-open-playlist="${safeText(p.id)}">♫ ${safeText(p.name)}</button>`).join('');$$('[data-open-playlist]',$('#sidebar-playlists-list')).forEach(el=>el.addEventListener('click',()=>{switchView('playlists');openPlaylist(el.dataset.openPlaylist);}));}
-function renderAll(){if(!state.user)return;$('#sidebar-username').textContent=state.user.name;$('#top-username').textContent=state.user.name;$('#user-avatar').textContent=state.user.name[0].toUpperCase();$('#top-avatar').textContent=state.user.name[0].toUpperCase();renderHome();renderLibrary();renderFavorites();renderPlaylists();renderReels();$('#jamendo-client-id').value=state.clientId;$('#algorithm-summary').textContent=algorithmSummary();}
+function renderAll(){if(!state.user)return;$('#sidebar-username').textContent=state.user.name;$('#top-username').textContent=state.user.name;$('#user-avatar').textContent=state.user.name[0].toUpperCase();$('#top-avatar').textContent=state.user.name[0].toUpperCase();renderHome();renderLibrary();renderFavorites();renderPlaylists();renderReels();$('#algorithm-summary').textContent=algorithmSummary();}
 function renderOnline(){const root=$('#online-results');root.innerHTML=state.onlineTracks.length?state.onlineTracks.map(musicCard).join(''):`<div class="empty-state">Nenhum resultado nesta busca. Tente outro termo.</div>`;bindTrackActions(root);}
 
 function extractGenres(track){const raw=[...(track.tags||[]),...(track.musicinfo?.tags?.genres||[]),...(track.musicinfo?.tags?.vartags||[])];return raw.map(x=>String(typeof x==='object'?(x.name||x.tag||''):x).toLowerCase()).filter(Boolean);}
-function buildRecommendations(){const all=[...state.localTracks,...state.onlineTracks,...state.savedOnline];if(!all.length)return[];const pref={};for(const h of state.history){const t=all.find(x=>x.id===h.id)||h.track;if(!t)continue;for(const g of extractGenres(t))pref[g]=(pref[g]||0)+2+(h.plays||1);pref[t.artist]=(pref[t.artist]||0)+1.5;}for(const k of state.favorites){const t=all.find(x=>trackKey(x)===k);if(t){for(const g of extractGenres(t))pref[g]=(pref[g]||0)+4;pref[t.artist]=(pref[t.artist]||0)+3;}}return all.map(t=>({...t,_score:(t.plays||0)*.8+(isFavorite(t)?4:0)+extractGenres(t).reduce((s,g)=>s+(pref[g]||0),0)+(pref[t.artist]||0)+((t.source==='online'||t.source==='jamendo')?0.8:0)})).sort((a,b)=>b._score-a._score).slice(0,8);}
+function buildRecommendations(){const all=[...state.localTracks,...state.onlineTracks,...state.savedOnline];if(!all.length)return[];const pref={};for(const h of state.history){const t=all.find(x=>x.id===h.id)||h.track;if(!t)continue;for(const g of extractGenres(t))pref[g]=(pref[g]||0)+2+(h.plays||1);pref[t.artist]=(pref[t.artist]||0)+1.5;}for(const k of state.favorites){const t=all.find(x=>trackKey(x)===k);if(t){for(const g of extractGenres(t))pref[g]=(pref[g]||0)+4;pref[t.artist]=(pref[t.artist]||0)+3;}}return all.map(t=>({...t,_score:(t.plays||0)*.8+(isFavorite(t)?4:0)+extractGenres(t).reduce((s,g)=>s+(pref[g]||0),0)+(pref[t.artist]||0)+(t.source==='audius'?0.8:0)})).sort((a,b)=>b._score-a._score).slice(0,8);}
 function algorithmSummary(){const all=[...state.localTracks,...state.onlineTracks,...state.savedOnline];if(!state.history.length&&!state.favorites.length)return 'O algoritmo ainda está na fase de descoberta. Ouça algumas músicas e favorite as que gostar para receber recomendações mais certeiras.';const scores={};for(const h of state.history){const t=all.find(x=>x.id===h.id)||h.track;if(t){for(const g of extractGenres(t))scores[g]=(scores[g]||0)+1;}}const top=Object.entries(scores).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);return top.length?`Seu histórico indica interesse em: ${top.join(', ')}. As recomendações combinam gêneros, artistas, favoritos e frequência de reprodução.`:`Você já tem ${state.history.length} reprodução(ões) registradas. Continue ouvindo para o algoritmo reconhecer seus estilos.`;}
 
-async function searchJamendo(query){const url=new URL('https://api.jamendo.com/v3.0/tracks/');url.search=new URLSearchParams({client_id:state.clientId||JAMENDO_TEST_ID,format:'json',limit:'24',search:query,include:'licenses musicinfo',audioformat:'mp32',type:'single albumtrack'}).toString();const response=await fetch(url);if(!response.ok)throw new Error(`Jamendo respondeu ${response.status}`);const json=await response.json();if(json.headers?.status==='failed')throw new Error(json.headers.error_message||'Falha na API Jamendo');return(json.results||[]).map(t=>({id:String(t.id),title:t.name||'Sem título',artist:t.artist_name||'Artista desconhecido',album:t.album_name||'Single',duration:Number(t.duration)||0,image:t.image,audio:t.audio,audiodownload:t.audiodownload,audiodownload_allowed:!!t.audiodownload_allowed,license:t.license_ccurl||t.licenses?.[0]?.url||'',shareurl:t.shareurl,source:'jamendo',badge:t.audiodownload_allowed?'Download permitido':'Streaming',tags:[...(t.musicinfo?.tags?.genres||[]),...(t.musicinfo?.tags?.instruments||[])].map(x=>typeof x==='string'?x:x.name).filter(Boolean),plays:0}));}
-async function loadStarterRecommendations(){
-  try{
-    const chartUrl=new URL('https://api.jamendo.com/v3.0/charts/track/');
-    chartUrl.search=new URLSearchParams({client_id:state.clientId||JAMENDO_TEST_ID,format:'json',limit:'16'}).toString();
-    const chartResponse=await fetch(chartUrl);if(!chartResponse.ok)throw new Error('Catálogo temporariamente indisponível');
-    const chart=await chartResponse.json();const ids=(chart.results||[]).map(x=>x.id).filter(Boolean);if(!ids.length)return;
-    const tracksUrl=new URL('https://api.jamendo.com/v3.0/tracks/');
-    const trackParams=new URLSearchParams({client_id:state.clientId||JAMENDO_TEST_ID,format:'json',limit:'16',include:'licenses musicinfo',audioformat:'mp32'});ids.forEach(id=>trackParams.append('id',String(id)));tracksUrl.search=trackParams.toString();
-    const tracksResponse=await fetch(tracksUrl);if(!tracksResponse.ok)throw new Error('Não foi possível carregar sugestões');
-    const json=await tracksResponse.json();state.onlineTracks=(json.results||[]).map(t=>({id:String(t.id),title:t.name||'Sem título',artist:t.artist_name||'Artista desconhecido',album:t.album_name||'Single',duration:Number(t.duration)||0,image:t.image,audio:t.audio,audiodownload:t.audiodownload,audiodownload_allowed:!!t.audiodownload_allowed,license:t.license_ccurl||'',shareurl:t.shareurl,source:'jamendo',badge:t.audiodownload_allowed?'Download permitido':'Streaming',tags:[...(t.musicinfo?.tags?.genres||[]),...(t.musicinfo?.tags?.instruments||[])].map(x=>typeof x==='string'?x:x.name).filter(Boolean),plays:0}));
-    if($('#view-home').classList.contains('active'))renderHome();
-  }catch(e){console.info('Sugestões online não carregadas:',e.message);}
-}
-async function searchCcMixter(query){const params=new URLSearchParams({f:'html',t:'links_by_lic',search:query,search_type:'all',limit:'15',lic:'by'});const url=`https://ccmixter.org/api/query?${params}`;const response=await fetch(url);if(!response.ok)throw new Error(`ccMixter respondeu ${response.status}`);const html=await response.text();const doc=new DOMParser().parseFromString(html,'text/html');const links=[...doc.querySelectorAll('a[href*="/files/"] , a[href*="ccmixter.org/"]')];const used=new Set(),out=[];for(const a of links){const href=a.href;if(!href||used.has(href)||!href.includes('ccmixter.org'))continue;const title=(a.textContent||'').trim();if(!title||title.length<2)continue;used.add(href);const card=a.closest('li,div,article')||a.parentElement;const text=(card?.textContent||'').replace(/\s+/g,' ').trim();out.push({id:`cc-${encodeURIComponent(href)}`,title,artist:(text.match(/by\s+([^|]+)/i)||[])[1]?.trim()||'Criador ccMixter',album:'ccMixter',duration:0,source:'ccmixter',badge:'CC BY · Confira a página',pageUrl:href,audio:null,tags:[],plays:0});if(out.length>=12)break;}return out;}
-async function runOnlineSearch(query){if(!query.trim()){showToast('Digite o nome de uma música, artista ou estilo.','error');return;}$('#online-status').textContent=`Pesquisando “${query}” em ${state.source==='jamendo'?'Jamendo':'ccMixter'}...`;$('#online-results').innerHTML='<div class="loading-line"><span></span> Buscando faixas...</div>';try{state.onlineTracks=state.source==='jamendo'?await searchJamendo(query):await searchCcMixter(query);renderOnline();$('#online-status').textContent=`${state.onlineTracks.length} resultado(s) encontrados em ${state.source==='jamendo'?'Jamendo':'ccMixter'}.`;if(!state.onlineTracks.length)$('#online-status').textContent='Não encontrei resultados. Experimente outra busca.';}catch(e){console.error(e);state.onlineTracks=[];renderOnline();$('#online-status').textContent=`Não foi possível acessar o catálogo agora. ${e.message}. Verifique sua conexão ou tente novamente.`;}}
 
-async function playTrack(track){if(!track)return;if(track.source==='ccmixter'&&!track.audio){window.open(track.pageUrl,'_blank','noopener');showToast('Abrindo a página original para ouvir e conferir a licença.');return;}try{if(state.currentObjectUrl){URL.revokeObjectURL(state.currentObjectUrl);state.currentObjectUrl=null;}if(track.source==='local'){state.currentObjectUrl=URL.createObjectURL(track.file);audio.src=state.currentObjectUrl;}else{if(!track.audio)throw new Error('Esta faixa não disponibilizou um link de reprodução.');audio.src=track.audio;}
-    state.current=track;state.queue=[...new Map([...state.onlineTracks,...state.localTracks,...state.savedOnline].map(t=>[trackKey(t),t])).values()];state.queueIndex=state.queue.findIndex(t=>trackKey(t)===trackKey(track));$('#player-title').textContent=track.title;$('#player-artist').textContent=track.artist;$('#now-cover').innerHTML='<span>♫</span>';$('#player-like').classList.toggle('liked',isFavorite(track));$('#player-like').textContent=isFavorite(track)?'♥':'♡';audio.volume=Number($('#volume-bar').value);await audio.play();track.plays=(track.plays||0)+1;registerPlay(track);renderHome();}catch(e){console.warn(e);showToast(e.message||'Não foi possível tocar essa faixa.','error');}}
+const AUDIOUS_API_BASES=['https://api.audius.co/v1','https://discoveryprovider.audius.co/v1'];
+async function audiusRequest(path,params={}){
+  const errors=[];
+  for(const base of AUDIOUS_API_BASES){
+    try{
+      const url=new URL(base+path);
+      Object.entries(params).forEach(([key,value])=>{if(value!==undefined&&value!==null&&value!=='')url.searchParams.set(key,String(value));});
+      const response=await fetch(url.toString(),{headers:{Accept:'application/json'}});
+      if(!response.ok)throw new Error('HTTP '+response.status);
+      const json=await response.json();
+      if(json.error)throw new Error(String(json.error));
+      return {items:Array.isArray(json.data)?json.data:[],base};
+    }catch(error){errors.push(error.message||String(error));}
+  }
+  throw new Error('O catálogo Audius não respondeu. '+errors.join(' · '));
+}
+function mapAudiusTrack(track,base){
+  if(!track||!track.id||track.is_streamable===false)return null;
+  const user=track.user||{};
+  const artwork=track.artwork;
+  const image=typeof artwork==='string'?artwork:(artwork?.['480x480']||artwork?.['150x150']||artwork?.['1000x1000']||'');
+  const rawTags=typeof track.tags==='string'?track.tags.split(/[;,]/):[];
+  const tags=[track.genre,...rawTags].filter(Boolean).map(x=>String(x).trim()).filter(Boolean);
+  let originalUrl=track.permalink||'';
+  if(originalUrl&&!/^https?:\/\//i.test(originalUrl))originalUrl='https://audius.co'+(originalUrl.startsWith('/')?'':'/')+originalUrl;
+  if(!originalUrl)originalUrl='https://audius.co';
+  return {
+    id:'audius-'+String(track.id),providerId:String(track.id),
+    title:track.title||'Faixa sem título',
+    artist:user.name||user.handle||track.artist_name||'Artista independente',
+    album:track.album_title||'Lançamento independente',
+    duration:Number(track.duration)||0,image,
+    audio:base+'/tracks/'+encodeURIComponent(track.id)+'/stream',
+    originalUrl,source:'audius',plays:Number(track.play_count)||0,
+    tags,genre:track.genre||'',license:track.license||null,
+    isStreamable:track.is_streamable!==false
+  };
+}
+async function loadAudiusCatalog(options={}){
+  const query=String(options.query||'').trim();
+  const genre=String(options.genre||'').trim();
+  const searchTerm=query||genre;
+  const status=$('#online-status');
+  if(status)status.textContent=searchTerm?'Pesquisando no catálogo Audius...':'Carregando músicas em alta no Audius...';
+  $('#online-results').innerHTML='<div class="loading-line"><span></span> Preparando o catálogo musical...</div>';
+  try{
+    let result=await audiusRequest(searchTerm?'/tracks/search':'/tracks/trending',
+      searchTerm?{query:searchTerm,limit:36}:{limit:36,time:'week'});
+    if(!result.items.length&&!searchTerm)result=await audiusRequest('/tracks/latest',{limit:36});
+    state.onlineTracks=result.items.map(track=>mapAudiusTrack(track,result.base)).filter(Boolean);
+    renderOnline();
+    if(status)status.textContent=state.onlineTracks.length?
+      state.onlineTracks.length+' faixas prontas para ouvir · catálogo Audius':
+      'Nenhuma faixa reproduzível apareceu agora. Atualize o catálogo ou tente outra categoria.';
+    if($('#view-home').classList.contains('active'))renderHome();
+  }catch(error){
+    console.error('Audius:',error);
+    state.onlineTracks=[];
+    renderOnline();
+    if(status)status.textContent='Não consegui carregar o catálogo agora. Verifique a conexão e tente Atualizar catálogo. ('+error.message+')';
+    if($('#view-home').classList.contains('active'))renderHome();
+  }
+}
+async function runOnlineSearch(query){
+  const value=String(query||'').trim();
+  if(!value){await loadAudiusCatalog();return;}
+  await loadAudiusCatalog({query:value});
+}
+
+
+async function playTrack(track){
+  if(!track)return;
+  try{
+    if(state.currentObjectUrl){URL.revokeObjectURL(state.currentObjectUrl);state.currentObjectUrl=null;}
+    if(track.source==='local'){
+      state.currentObjectUrl=URL.createObjectURL(track.file);
+      audio.src=state.currentObjectUrl;
+    }else{
+      if(!track.audio)throw new Error('Esta faixa não possui um endereço de streaming disponível.');
+      audio.src=track.audio;
+    }
+    state.current=track;
+    state.queue=[...new Map([...state.onlineTracks,...state.localTracks,...state.savedOnline].map(t=>[trackKey(t),t])).values()];
+    state.queueIndex=state.queue.findIndex(t=>trackKey(t)===trackKey(track));
+    $('#player-title').textContent=track.title;
+    $('#player-artist').textContent=track.artist;
+    $('#now-cover').innerHTML='<span>♫</span>';
+    $('#player-like').classList.toggle('liked',isFavorite(track));
+    $('#player-like').textContent=isFavorite(track)?'♥':'♡';
+    audio.volume=Number($('#volume-bar').value);
+    await audio.play();
+    track.plays=(track.plays||0)+1;
+    registerPlay(track);
+    renderHome();
+  }catch(error){console.warn(error);showToast(error.message||'Não foi possível tocar essa faixa.','error');}
+}
+
 function registerPlay(track){const found=state.history.find(h=>h.id===track.id);if(found){found.plays=(found.plays||1)+1;found.track=track;}else state.history.unshift({id:track.id,plays:1,track});state.history=state.history.slice(0,40);saveVault();$('#algorithm-summary').textContent=algorithmSummary();}
 function updatePlayerLike(){if(!state.current)return;const liked=isFavorite(state.current);$('#player-like').classList.toggle('liked',liked);$('#player-like').textContent=liked?'♥':'♡';}
 function playNext(direction=1){if(!state.queue.length)return;let next;if(state.shuffle)next=Math.floor(Math.random()*state.queue.length);else next=(state.queueIndex+direction+state.queue.length)%state.queue.length;state.queueIndex=next;playTrack(state.queue[next]);}
 
 audio.addEventListener('play',()=>$('#play-btn').textContent='Ⅱ');audio.addEventListener('pause',()=>$('#play-btn').textContent='▶');audio.addEventListener('timeupdate',()=>{if(!audio.duration)return;$('#seek-bar').value=Math.round(audio.currentTime/audio.duration*1000);$('#current-time').textContent=formatTime(audio.currentTime);$('#total-time').textContent=formatTime(audio.duration);});audio.addEventListener('loadedmetadata',()=>{$('#total-time').textContent=formatTime(audio.duration);if(state.current&&state.current.source==='local'){state.current.duration=audio.duration;renderHome();renderLibrary();}});audio.addEventListener('ended',()=>{if(state.repeat){audio.currentTime=0;audio.play();}else playNext(1);});
 
-function switchView(view){$$('.content-view').forEach(x=>x.classList.remove('active'));$(`#view-${view}`)?.classList.add('active');$$('.nav-link').forEach(x=>x.classList.toggle('active',x.dataset.view===view));const names={home:'Início',discover:'Descobrir',library:'Minha biblioteca',favorites:'Favoritas',playlists:'Playlists',reels:'Reels · Rascunhos',settings:'Preferências'};$('#breadcrumb-current').textContent=names[view]||view;if(view==='reels')renderReels();window.scrollTo({top:0,behavior:'smooth'});}
+function switchView(view){$$('.content-view').forEach(x=>x.classList.remove('active'));$(`#view-${view}`)?.classList.add('active');$$('.nav-link').forEach(x=>x.classList.toggle('active',x.dataset.view===view));const names={home:'Início',discover:'Descobrir',library:'Minha biblioteca',favorites:'Favoritas',playlists:'Playlists',reels:'Reels · Rascunhos',settings:'Preferências'};$('#breadcrumb-current').textContent=names[view]||view;if(view==='reels')renderReels();if(view==='discover'){renderOnline();if(!state.onlineTracks.length)loadAudiusCatalog();}window.scrollTo({top:0,behavior:'smooth'});}
 const reelConcepts = [
   ['A batida que muda tudo','Comece com uma cena calma e troque para cortes rápidos quando a batida entrar.'],
   ['Meu som favorito em 15 segundos','Apresente um trecho musical e escreva o motivo de ele ter virado seu favorito.'],
@@ -231,7 +339,7 @@ function choosePlaylist(track){if(!state.playlists.length){showToast('Crie uma p
 const tutorial=[
   {label:'PRIMEIRO CONTATO',title:'Oi! Eu sou o Lumi.',text:'Vou te mostrar como o Sonora funciona, passo a passo. Não precisa entender de tecnologia: é só acompanhar. Preparado para descobrir seu novo player?',tip:'Você pode reabrir este tutorial quando quiser tocando no ícone ✧, lá no topo.'},
   {label:'SUA BIBLIOTECA',title:'Traga suas músicas.',text:'Você pode clicar em “Adicionar arquivos” ou simplesmente arrastar músicas do computador para a área indicada. O Sonora tenta reconhecer título e artista pelas informações do arquivo.',tip:'Os arquivos importados ficam neste navegador, protegidos no cofre local. Não são enviados para um servidor.'},
-  {label:'DESCOBRIR',title:'Busque novos sons.',text:'Na aba Descobrir, pesquise por nome de música, artista ou estilo. Os resultados online ficam separados da sua biblioteca local.',tip:'O catálogo mostra a origem e as informações de licença disponíveis. O download só aparece quando a fonte autoriza.'},
+  {label:'DESCOBRIR',title:'Busque novos sons.',text:'Na aba Descobrir, você já encontra músicas em alta no catálogo Audius. Pesquise por música, artista ou estilo e aperte Play para ouvir direto no Sonora.',tip:'O Sonora transmite pelo Audius e mostra um link para a página original do artista. Isso não significa que a faixa seja livre para reutilização fora da plataforma.'},
   {label:'REELS',title:'Crie vídeos curtos no seu ritmo.',text:'A área Reels tem projetos inacabados para você desenvolver. Abra um rascunho, escreva uma ideia, escolha um vídeo e salve. Nada será publicado automaticamente.',tip:'Os 100 cartões são ideias de partida. Você pode alterar títulos, descrições e anexar seus próprios vídeos.'},
   {label:'ALGORITMO',title:'O Sonora aprende com você.',text:'Quando você ouve, favorita ou organiza uma faixa, o algoritmo registra seus gostos. Ele usa gêneros, artistas e frequência de reprodução para ordenar recomendações.',tip:'No começo as sugestões são gerais. Quanto mais você usa, mais personalizadas ficam.'},
   {label:'PRONTO!',title:'Agora é com você!',text:'Crie playlists, favorite suas descobertas e aproveite. O botão de reprodução fica sempre na parte inferior da tela.',tip:'Dica: use o botão de coração para ensinar ao algoritmo quais músicas você curte.'}
@@ -242,9 +350,9 @@ function nextTutorial(){if(state.tutorialStep<tutorial.length-1){state.tutorialS
 function finishTutorial(){localStorage.setItem('sonora-tutorial-done','1');$('#tutorial-overlay').classList.add('hidden');showToast('Bem-vindo ao Sonora! ✦');}
 
 async function initAuth(){const meta=await dbGet('meta','account');if(!meta){$('#auth-title').textContent='Crie seu espaço.';$('#auth-subtitle').textContent='Escolha um nome e uma senha para proteger seus dados neste navegador.';$('#auth-username').classList.remove('hidden');$('#auth-username').previousElementSibling.classList.remove('hidden');$('#auth-submit').textContent='Criar meu espaço →';}else{$('#auth-title').textContent='Que bom ter você de volta.';$('#auth-subtitle').textContent='Digite seu nome e sua senha para abrir seu cofre musical.';$('#auth-username').value=meta.username;$('#auth-username').classList.add('hidden');$('#auth-username').previousElementSibling.classList.add('hidden');$('#auth-password').focus();$('#auth-submit').textContent='Entrar →';}}
-async function handleAuth(e){e.preventDefault();const meta=await dbGet('meta','account');const username=$('#auth-username').value.trim()||meta?.username;const password=$('#auth-password').value;$('#auth-error').textContent='';if(password.length<8){$('#auth-error').textContent='Use uma senha com pelo menos 8 caracteres.';return;}try{if(!meta){const salt=crypto.getRandomValues(new Uint8Array(16));const key=await deriveKey(password,salt);const verifier=await encryptText('SONORA-LOCAL-VAULT-OK',key);await dbPut('meta',{id:'account',username,salt:toB64(salt),verifier});state.key=key;state.user={name:username};state.playlists=[];state.favorites=[];state.history=[];state.reelsDrafts=[];state.reelsInitialized=false;state.clientId=JAMENDO_TEST_ID;await saveVault();}else{const key=await deriveKey(password,fromB64(meta.salt));const check=await decryptText(meta.verifier,key);if(check!=='SONORA-LOCAL-VAULT-OK')throw new Error('Senha incorreta. Confira e tente de novo.');state.key=key;await loadVault();state.user=state.user||{name:meta.username};}
+async function handleAuth(e){e.preventDefault();const meta=await dbGet('meta','account');const username=$('#auth-username').value.trim()||meta?.username;const password=$('#auth-password').value;$('#auth-error').textContent='';if(password.length<8){$('#auth-error').textContent='Use uma senha com pelo menos 8 caracteres.';return;}try{if(!meta){const salt=crypto.getRandomValues(new Uint8Array(16));const key=await deriveKey(password,salt);const verifier=await encryptText('SONORA-LOCAL-VAULT-OK',key);await dbPut('meta',{id:'account',username,salt:toB64(salt),verifier});state.key=key;state.user={name:username};state.playlists=[];state.favorites=[];state.history=[];state.reelsDrafts=[];state.reelsInitialized=false;await saveVault();}else{const key=await deriveKey(password,fromB64(meta.salt));const check=await decryptText(meta.verifier,key);if(check!=='SONORA-LOCAL-VAULT-OK')throw new Error('Senha incorreta. Confira e tente de novo.');state.key=key;await loadVault();state.user=state.user||{name:meta.username};}
     if(!state.reelsInitialized){state.reelsDrafts=makeSeedReels();state.reelsInitialized=true;await saveVault();}
-    $('#auth-screen').classList.add('hidden');$('#app-shell').classList.remove('hidden');renderAll();switchView('home');loadStarterRecommendations();if(!localStorage.getItem('sonora-tutorial-done'))setTimeout(startTutorial,650);
+    $('#auth-screen').classList.add('hidden');$('#app-shell').classList.remove('hidden');renderAll();switchView('home');loadAudiusCatalog();if(!localStorage.getItem('sonora-tutorial-done'))setTimeout(startTutorial,650);
   }catch(err){$('#auth-error').textContent=err.message.includes('Senha incorreta')?err.message:'Não foi possível abrir o cofre. Verifique a senha e tente novamente.';}}
 async function logout(){if(audio&&!audio.paused)audio.pause();state.key=null;state.user=null;state.localTracks=[];state.history=[];state.favorites=[];state.playlists=[];state.reelsDrafts=[];state.reelsInitialized=false;$('#app-shell').classList.add('hidden');$('#auth-screen').classList.remove('hidden');$('#auth-password').value='';await initAuth();}
 
@@ -257,7 +365,8 @@ function wireEvents(){
   $('#drop-browse').addEventListener('click',()=>$('#file-picker').click());$('#library-import').addEventListener('click',()=>$('#file-picker').click());$('#library-browse').addEventListener('click',()=>$('#file-picker').click());$('#file-picker').addEventListener('change',e=>{importFiles(e.target.files);e.target.value='';});
   addDropHandlers($('#home-drop-zone'));addDropHandlers($('#library-drop-zone'));addDropHandlers(document.body);
   $('#online-search-btn').addEventListener('click',()=>runOnlineSearch($('#online-search').value));$('#online-search').addEventListener('keydown',e=>{if(e.key==='Enter')runOnlineSearch($('#online-search').value);});
-  $$('.source-pill').forEach(b=>b.addEventListener('click',()=>{$$('.source-pill').forEach(x=>x.classList.toggle('active',x===b));state.source=b.dataset.source;$('#online-status').textContent=state.source==='ccmixter'?'ccMixter: resultados abrem na página original para reprodução e conferência da licença.':'Jamendo: reprodução no player e download apenas quando autorizado.';}));
+  $('#catalog-refresh').addEventListener('click',()=>loadAudiusCatalog());
+  $('#catalog-genres').addEventListener('click',e=>{const button=e.target.closest('[data-audius-genre]');if(!button)return;$('[data-audius-genre]').forEach(x=>x.classList.toggle('active',x===button));$('#online-search').value='';loadAudiusCatalog({genre:button.dataset.audiusGenre});});
   $$('.filter-chip').forEach(b=>b.addEventListener('click',()=>{$$('.filter-chip').forEach(x=>x.classList.toggle('active',x===b));state.libraryFilter=b.dataset.libraryFilter;renderLibrary();}));
   $('#play-btn').addEventListener('click',()=>{if(!state.current){switchView('discover');return;}if(audio.paused)audio.play().catch(()=>{});else audio.pause();});$('#prev-btn').addEventListener('click',()=>playNext(-1));$('#next-btn').addEventListener('click',()=>playNext(1));$('#shuffle-btn').addEventListener('click',()=>{state.shuffle=!state.shuffle;$('#shuffle-btn').classList.toggle('active',state.shuffle);});$('#repeat-btn').addEventListener('click',()=>{state.repeat=!state.repeat;$('#repeat-btn').classList.toggle('active',state.repeat);});$('#seek-bar').addEventListener('input',()=>{if(audio.duration)audio.currentTime=(Number($('#seek-bar').value)/1000)*audio.duration;});$('#volume-bar').addEventListener('input',()=>audio.volume=Number($('#volume-bar').value));$('#player-like').addEventListener('click',()=>{if(state.current)toggleFavorite(state.current);});$('#queue-btn').addEventListener('click',()=>showToast(`Fila atual: ${state.queue.length} faixa(s).`));
   $('#new-playlist-side').addEventListener('click',createPlaylist);$('#new-playlist-main').addEventListener('click',createPlaylist);$('#back-playlists').addEventListener('click',closePlaylist);
@@ -269,7 +378,6 @@ function wireEvents(){
   $$('.reel-filter').forEach(b=>b.addEventListener('click',()=>{$$('.reel-filter').forEach(x=>x.classList.toggle('active',x===b));state.reelFilter=b.dataset.reelFilter;state.reelsVisible=20;renderReels();}));
   $('#reels-load-more').addEventListener('click',()=>{state.reelsVisible+=20;renderReels();});
   $('#reels-grid').addEventListener('click',e=>{const edit=e.target.closest('[data-reel-edit]');const preview=e.target.closest('[data-reel-preview]');if(edit)openReelEditor(edit.dataset.reelEdit);if(preview)openReelPreview(preview.dataset.reelPreview);});
-  $('#save-api-key').addEventListener('click',async()=>{const v=$('#jamendo-client-id').value.trim();if(!v){showToast('Informe um identificador válido.','error');return;}state.clientId=v;await saveVault();showToast('Identificador salvo neste navegador.');});
   $('#reset-algorithm').addEventListener('click',async()=>{state.history=[];state.favorites=[];await saveVault();renderAll();showToast('Aprendizado reiniciado.');});
   $('#delete-account-data').addEventListener('click',()=>{openModal('<h2>Apagar todos os dados?</h2><p>Isso remove a conta local, músicas importadas, playlists e histórico deste navegador. Esta ação não pode ser desfeita.</p><div class="modal-actions"><button class="outline-btn" id="cancel-delete">Cancelar</button><button class="primary-btn" id="confirm-delete">Apagar tudo</button></div>');$('#cancel-delete').addEventListener('click',closeModal);$('#confirm-delete').addEventListener('click',async()=>{closeModal();audio.pause();await dbClear('vault');await dbClear('meta');await dbClear('media');state.key=null;state.localTracks=[];state.playlists=[];state.favorites=[];state.history=[];state.reelsDrafts=[];state.reelsInitialized=false;$('#app-shell').classList.add('hidden');$('#auth-screen').classList.remove('hidden');$('#auth-username').classList.remove('hidden');$('#auth-username').previousElementSibling.classList.remove('hidden');$('#auth-username').value='';$('#auth-password').value='';state.savedOnline=[];await initAuth();showToast('Dados apagados deste navegador.');});});
 }

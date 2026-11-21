@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b0d17">
-  <meta name="description" content="Sonora — seu espaço para descobrir, organizar e ouvir música.">
-  <title>Sonora — música do seu jeito</title>
+  <meta name="description" content="Sonora v1.0 — descubra e reproduza músicas online pelo catálogo Audius.">
+  <title>Sonora v1.0 — seu universo musical</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -39,7 +39,7 @@
         </form>
         <div class="security-note"><span class="shield">✦</span><span>Senha protegida com derivação PBKDF2 e dados locais criptografados. A conta fica neste navegador.</span></div>
       </div>
-      <div class="auth-footer">SONORA WEB · EXPERIÊNCIA PESSOAL</div>
+      <div class="auth-footer">SONORA V1 · PLAYER ONLINE</div>
     </div>
   </section>
 
@@ -67,14 +67,7 @@
         <div class="top-actions"><button class="icon-btn" id="tutorial-restart" title="Abrir tutorial">✧</button><button class="user-chip" id="profile-button"><span class="avatar tiny" id="top-avatar">S</span><span id="top-username">Usuário</span><span class="chevron">⌄</span></button></div>
       </header>
 
-      <aside class="offline-banner" aria-label="Edição local do Sonora">
-        <div class="offline-banner-icon" aria-hidden="true">⌁</div>
-        <div class="offline-banner-copy">
-          <strong>Cansou de depender da internet?</strong>
-          <span>Baixe a nossa versão local e abra o Sonora diretamente no seu computador.</span>
-        </div>
-        <a class="offline-banner-button" href="downloads/Sonora_Local_v1.1.0.zip" download>Baixar versão local <span aria-hidden="true">↓</span></a>
-      </aside>
+
 
       <section class="content-view active" id="view-home">
         <div class="hero-banner">
@@ -89,12 +82,22 @@
       </section>
 
       <section class="content-view" id="view-discover">
-        <div class="page-intro"><span class="eyebrow">EXPLORE NOVOS SONS</span><h1>Descobrir<span class="accent-period">.</span></h1><p>Pesquise no catálogo online e encontre faixas com informações de licença.</p></div>
+        <div class="page-intro"><span class="eyebrow">CATÁLOGO ABERTO · AUDIOUS</span><h1>Descobrir<span class="accent-period">.</span></h1><p>Encontre faixas de artistas independentes e ouça direto no player do Sonora.</p></div>
         <div class="search-panel"><div class="search-icon">⌕</div><input id="online-search" placeholder="Busque por música, artista ou estilo..." autocomplete="off"><button id="online-search-btn" class="primary-btn">Buscar <span>→</span></button></div>
-        <div class="source-row"><span>CATÁLOGO</span><button class="source-pill active" data-source="jamendo">Jamendo <small>●</small></button><button class="source-pill" data-source="ccmixter">ccMixter <small>●</small></button><span class="source-note">Somente resultados com dados de origem/licença.</span></div>
-        <div id="online-status" class="status-line">Pesquise uma música para começar ou veja as recomendações.</div>
+        <div class="catalog-heading"><div><span class="eyebrow">SELEÇÃO DO AUDIOUS</span><h2>Músicas prontas para ouvir</h2><p class="muted">Escolha uma faixa e aperte Play. O áudio é transmitido pelo serviço original.</p></div><button id="catalog-refresh" class="outline-btn">↻ Atualizar catálogo</button></div>
+        <div class="catalog-genres" id="catalog-genres" aria-label="Categorias musicais">
+          <button class="genre-chip active" data-audius-genre="">Tudo</button>
+          <button class="genre-chip" data-audius-genre="Electronic">Eletrônica</button>
+          <button class="genre-chip" data-audius-genre="Hip-Hop/Rap">Hip-Hop</button>
+          <button class="genre-chip" data-audius-genre="Dance">Dance</button>
+          <button class="genre-chip" data-audius-genre="Rock">Rock</button>
+          <button class="genre-chip" data-audius-genre="Ambient">Ambient</button>
+          <button class="genre-chip" data-audius-genre="Pop">Pop</button>
+          <button class="genre-chip" data-audius-genre="Classical">Clássica</button>
+        </div>
+        <div id="online-status" class="status-line">Carregando músicas em alta no catálogo Audius...</div>
         <div id="online-results" class="music-grid online-grid"></div>
-        <div class="api-footnote">A busca Jamendo usa um identificador público de demonstração, limitado a testes de leitura. Você pode configurar seu próprio ID em Preferências. <a href="https://developer.jamendo.com/v3.0/authentication" target="_blank" rel="noopener">Documentação da API ↗</a></div>
+        <div class="api-footnote">As músicas são hospedadas e transmitidas pelo Audius; o Sonora não baixa nem reenvia os áudios. Cada faixa pertence aos respectivos criadores. Para reutilizar uma música fora da plataforma, confira a licença e as permissões na página original do artista. <a href="https://docs.audius.co/api/" target="_blank" rel="noopener noreferrer">Documentação oficial ↗</a></div>
       </section>
 
       <section class="content-view" id="view-library">
@@ -146,10 +149,10 @@
       </section>
 
       <section class="content-view" id="view-settings">
-        <div class="page-intro"><span class="eyebrow">CONTROLE SEU ESPAÇO</span><h1>Preferências<span class="accent-period">.</span></h1><p>Personalize sua experiência e suas conexões.</p></div>
-        <div class="settings-card"><div><h3>Identificador da API Jamendo</h3><p>O app vem com o ID público de demonstração. Para um uso próprio, gere um ID no portal oficial.</p></div><div class="setting-inline"><input id="jamendo-client-id" placeholder="Seu client_id"><button id="save-api-key" class="outline-btn">Salvar ID</button></div><small>O ID é armazenado apenas neste navegador. Não coloque senhas nem tokens privados aqui.</small></div>
+        <div class="page-intro"><span class="eyebrow">CONTROLE SEU ESPAÇO</span><h1>Preferências<span class="accent-period">.</span></h1><p>Personalize sua experiência e seus dados.</p></div>
+        <div class="settings-card"><div><h3>Catálogo de música online</h3><p>O Sonora usa o Audius para pesquisar faixas e reproduzir o áudio diretamente pelo serviço. A maioria das consultas de leitura funciona sem conta de desenvolvedor; podem existir limites de uso.</p></div><a href="https://audius.co/" target="_blank" rel="noopener noreferrer" class="outline-btn">Conhecer Audius ↗</a></div>
         <div class="settings-card"><div><h3>Seu algoritmo</h3><p id="algorithm-summary">Ainda estamos aprendendo seu gosto musical.</p></div><button id="reset-algorithm" class="outline-btn">Reiniciar aprendizado</button></div>
-        <div class="settings-card danger-settings"><div><h3>Dados deste navegador</h3><p>As músicas importadas e suas playlists ficam no cofre local. Sair não apaga seus dados.</p></div><button id="delete-account-data" class="outline-btn danger-btn">Apagar conta e dados</button></div>
+        <div class="settings-card danger-settings"><div><h3>Dados deste navegador</h3><p>As músicas importadas, playlists e preferências ficam neste navegador. Sair não apaga seus dados.</p></div><button id="delete-account-data" class="outline-btn danger-btn">Apagar conta e dados</button></div>
       </section>
     </main>
 
