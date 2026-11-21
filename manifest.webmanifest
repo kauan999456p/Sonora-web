@@ -1,0 +1,14 @@
+{
+  "name": "Sonora — música, descobertas e Reels",
+  "short_name": "Sonora",
+  "description": "Player de música e laboratório de projetos de Reels inacabados.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0d17",
+  "theme_color": "#0b0d17",
+  "icons": [
+    {"src": "assets/sonora-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+  ]
+}

@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d17">
+  <meta name="description" content="Sonora — seu espaço para descobrir, organizar e ouvir música.">
+  <title>Sonora — música do seu jeito</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="reels.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/sonora-icon.svg" type="image/svg+xml">
+</head>
+<body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <section id="auth-screen" class="auth-screen">
+    <div class="auth-art">
+      <div class="auth-orbit orbit-a"></div><div class="auth-orbit orbit-b"></div>
+      <div class="auth-disc"><span></span></div>
+      <div class="auth-note note-a">♫</div><div class="auth-note note-b">♪</div>
+      <div class="auth-art-copy"><span class="eyebrow">UM UNIVERSO DE SOM</span><h1>Encontre seu<br><em>próximo som.</em></h1><p>Uma biblioteca só sua. Descoberta inteligente. Música sem complicação.</p></div>
+    </div>
+    <div class="auth-panel">
+      <div class="brand brand-auth"><div class="brand-mark"><i></i><i></i><i></i><i></i></div><span>sonora</span></div>
+      <div class="auth-content">
+        <div class="auth-kicker">BEM-VINDO AO SEU PLAYER</div>
+        <h2 id="auth-title">Crie seu espaço.</h2>
+        <p id="auth-subtitle" class="muted">Escolha um nome e uma senha para proteger seus dados neste navegador.</p>
+        <form id="auth-form" autocomplete="off">
+          <label for="auth-username">Seu nome</label>
+          <input id="auth-username" maxlength="24" placeholder="Como podemos chamar você?" required>
+          <label for="auth-password">Senha</label>
+          <input id="auth-password" type="password" minlength="8" placeholder="Pelo menos 8 caracteres" required>
+          <button class="primary-btn auth-submit" type="submit" id="auth-submit">Criar meu espaço <span>→</span></button>
+          <p id="auth-error" class="form-error" aria-live="polite"></p>
+        </form>
+        <div class="security-note"><span class="shield">✦</span><span>Senha protegida com derivação PBKDF2 e dados locais criptografados. A conta fica neste navegador.</span></div>
+      </div>
+      <div class="auth-footer">SONORA WEB · EXPERIÊNCIA PESSOAL</div>
+    </div>
+  </section>
+
+  <div id="app-shell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark"><i></i><i></i><i></i><i></i></div><span>sonora</span><small>WEB PLAYER</small></div>
+      <button class="nav-link active" data-view="home"><b class="nav-icon">⌂</b><span>Início</span></button>
+      <button class="nav-link" data-view="discover"><b class="nav-icon">⌕</b><span>Descobrir</span><span class="nav-dot"></span></button>
+      <button class="nav-link" data-view="library"><b class="nav-icon">▤</b><span>Minha biblioteca</span></button>
+      <div class="sidebar-label">SUA MÚSICA</div>
+      <button class="nav-link" data-view="favorites"><b class="nav-icon">♡</b><span>Favoritas</span></button>
+      <button class="nav-link" data-view="playlists"><b class="nav-icon">☷</b><span>Playlists</span></button>
+      <div class="sidebar-label">CRIAR</div>
+      <button class="nav-link" data-view="reels"><b class="nav-icon">▣</b><span>Reels · Rascunhos</span><span class="nav-dot"></span></button>
+      <div class="sidebar-playlists"><div class="sidebar-label">PLAYLISTS</div><div id="sidebar-playlists-list"></div><button id="new-playlist-side" class="create-playlist">＋ Nova playlist</button></div>
+      <div class="sidebar-bottom">
+        <div class="mini-profile"><div class="avatar" id="user-avatar">S</div><div><strong id="sidebar-username">Usuário</strong><small>Conta local</small></div><button id="logout-btn" title="Sair">↗</button></div>
+        <div class="local-encryption"><span>●</span> Cofre local ativo</div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="breadcrumbs"><span>SONORA</span><b>/</b><strong id="breadcrumb-current">Início</strong></div>
+        <div class="top-actions"><button class="icon-btn" id="tutorial-restart" title="Abrir tutorial">✧</button><button class="user-chip" id="profile-button"><span class="avatar tiny" id="top-avatar">S</span><span id="top-username">Usuário</span><span class="chevron">⌄</span></button></div>
+      </header>
+
+      <aside class="offline-banner" aria-label="Edição local do Sonora">
+        <div class="offline-banner-icon" aria-hidden="true">⌁</div>
+        <div class="offline-banner-copy">
+          <strong>Cansou de depender da internet?</strong>
+          <span>Baixe a nossa versão local e abra o Sonora diretamente no seu computador.</span>
+        </div>
+        <a class="offline-banner-button" href="downloads/Sonora_Local_v1.1.0.zip" download>Baixar versão local <span aria-hidden="true">↓</span></a>
+      </aside>
+
+      <section class="content-view active" id="view-home">
+        <div class="hero-banner">
+          <div class="hero-copy"><div class="eyebrow"><span class="pulse-dot"></span> SEU UNIVERSO MUSICAL</div><h1>Deixe a música<br><em>te encontrar.</em></h1><p>Seus sons favoritos, novas descobertas e uma trilha sonora que aprende com você.</p><div class="hero-buttons"><button class="primary-btn" id="hero-discover">Explorar músicas <span>↗</span></button><button class="ghost-btn" id="hero-import">＋ Adicionar arquivos</button></div></div>
+          <div class="hero-visual"><div class="hero-ring ring-one"></div><div class="hero-ring ring-two"></div><div class="hero-vinyl"><div class="vinyl-center"></div><div class="vinyl-glint"></div></div><div class="floating-tag tag-top">SOM NOVO <span>✦</span></div><div class="floating-tag tag-bottom">FEITO PRA VOCÊ <span>↗</span></div></div>
+        </div>
+        <div class="section-heading"><div><span class="eyebrow">SEU GOSTO, SEU RITMO</span><h2>Feito para você <span class="sparkle">✦</span></h2><p class="muted">O algoritmo aprende com suas reproduções e favoritas.</p></div><button class="text-btn" data-view="discover">Ver descobertas <span>→</span></button></div>
+        <div id="recommendation-grid" class="music-grid"></div>
+        <div class="section-heading compact-heading"><div><span class="eyebrow">CONTINUE DE ONDE PAROU</span><h2>Ouvidas recentemente</h2></div><button class="text-btn" data-view="library">Ver biblioteca <span>→</span></button></div>
+        <div id="recent-list" class="track-list"></div>
+        <div class="drop-zone" id="home-drop-zone"><div class="drop-icon">⇧</div><div><strong>Solte suas músicas aqui</strong><p>MP3, WAV, OGG, M4A, FLAC e outros formatos compatíveis com seu navegador.</p></div><button class="outline-btn" id="drop-browse">Escolher arquivos</button></div>
+      </section>
+
+      <section class="content-view" id="view-discover">
+        <div class="page-intro"><span class="eyebrow">EXPLORE NOVOS SONS</span><h1>Descobrir<span class="accent-period">.</span></h1><p>Pesquise no catálogo online e encontre faixas com informações de licença.</p></div>
+        <div class="search-panel"><div class="search-icon">⌕</div><input id="online-search" placeholder="Busque por música, artista ou estilo..." autocomplete="off"><button id="online-search-btn" class="primary-btn">Buscar <span>→</span></button></div>
+        <div class="source-row"><span>CATÁLOGO</span><button class="source-pill active" data-source="jamendo">Jamendo <small>●</small></button><button class="source-pill" data-source="ccmixter">ccMixter <small>●</small></button><span class="source-note">Somente resultados com dados de origem/licença.</span></div>
+        <div id="online-status" class="status-line">Pesquise uma música para começar ou veja as recomendações.</div>
+        <div id="online-results" class="music-grid online-grid"></div>
+        <div class="api-footnote">A busca Jamendo usa um identificador público de demonstração, limitado a testes de leitura. Você pode configurar seu próprio ID em Preferências. <a href="https://developer.jamendo.com/v3.0/authentication" target="_blank" rel="noopener">Documentação da API ↗</a></div>
+      </section>
+
+      <section class="content-view" id="view-library">
+        <div class="page-intro page-intro-row"><div><span class="eyebrow">SEUS ARQUIVOS</span><h1>Minha biblioteca<span class="accent-period">.</span></h1><p>Suas músicas importadas ficam salvas neste navegador, protegidas pelo seu cofre.</p></div><button class="primary-btn" id="library-import">＋ Importar músicas</button></div>
+        <div class="library-toolbar"><div class="tab-filters"><button class="filter-chip active" data-library-filter="all">Todas</button><button class="filter-chip" data-library-filter="recent">Recentes</button><button class="filter-chip" data-library-filter="favorites">Favoritas</button></div><span id="library-count" class="muted small-text">0 faixas</span></div>
+        <div id="library-list" class="track-list"></div>
+        <div class="drop-zone library-drop" id="library-drop-zone"><div class="drop-icon">⇧</div><div><strong>Arraste arquivos para importar</strong><p>O Sonora tenta identificar título e artista pelas tags do arquivo.</p></div><button class="outline-btn" id="library-browse">Selecionar arquivos</button></div>
+      </section>
+
+      <section class="content-view" id="view-favorites">
+        <div class="page-intro"><span class="eyebrow">SELEÇÃO ESPECIAL</span><h1>Suas favoritas<span class="accent-period">.</span></h1><p>Aquelas que merecem replay.</p></div>
+        <div id="favorites-list" class="track-list"></div>
+      </section>
+
+      <section class="content-view" id="view-playlists">
+        <div class="page-intro page-intro-row"><div><span class="eyebrow">ORGANIZE SUA TRILHA</span><h1>Playlists<span class="accent-period">.</span></h1><p>Crie coleções com os sons de cada momento.</p></div><button class="primary-btn" id="new-playlist-main">＋ Criar playlist</button></div>
+        <div id="playlist-cards" class="playlist-grid"></div>
+        <div id="playlist-detail" class="playlist-detail hidden"><div class="playlist-detail-head"><button id="back-playlists" class="back-btn">← Todas as playlists</button><h2 id="playlist-detail-title"></h2><p id="playlist-detail-subtitle" class="muted"></p></div><div id="playlist-detail-list" class="track-list"></div></div>
+      </section>
+
+      <section class="content-view reels-view" id="view-reels">
+        <div class="reels-hero">
+          <div class="reels-hero-copy">
+            <span class="eyebrow"><span class="pulse-dot"></span> SONORA CREATOR LAB</span>
+            <h1>Reels em<br><em>construção.</em></h1>
+            <p>Uma bancada de ideias para vídeos curtos. Comece com um rascunho, adicione seu vídeo e desenvolva no seu ritmo.</p>
+            <div class="reels-hero-actions"><button class="primary-btn" id="reel-create-main">＋ Novo Reel</button><span class="reels-hero-note">100 rascunhos de partida · vídeos de até 1 GB</span></div>
+          </div>
+          <div class="reels-hero-art" aria-hidden="true"><div class="reel-phone phone-back"><div class="phone-screen screen-pink"></div></div><div class="reel-phone phone-front"><div class="phone-speaker"></div><div class="phone-screen screen-blue"><span>SONORA<br>REELS</span><i>♫</i></div><div class="phone-home"></div></div><div class="reels-spark spark-a">✦</div><div class="reels-spark spark-b">✧</div></div>
+        </div>
+        <div class="reels-stats">
+          <div><strong id="reels-total">100</strong><span>PROJETOS DE PARTIDA</span></div>
+          <div><strong id="reels-with-video">0</strong><span>COM VÍDEO ADICIONADO</span></div>
+          <div><strong id="reels-in-progress">100</strong><span>AINDA INACABADOS</span></div>
+        </div>
+        <div class="reels-toolbar">
+          <div><span class="eyebrow">SUA OFICINA DE IDEIAS</span><h2>Rascunhos de Reels</h2><p class="muted">São 100 projetos inacabados para desenvolver. Cada rascunho aceita um vídeo de até 1 GB, conforme o espaço disponível no navegador.</p></div>
+          <div class="reels-search-wrap"><span>⌕</span><input id="reels-search" type="search" placeholder="Buscar um rascunho..."></div>
+        </div>
+        <div class="reels-filters">
+          <button class="reel-filter active" data-reel-filter="all">Todos</button>
+          <button class="reel-filter" data-reel-filter="video">Com vídeo</button>
+          <button class="reel-filter" data-reel-filter="idea">Só ideias</button>
+          <span id="reels-count" class="muted small-text">100 projetos</span>
+        </div>
+        <div class="reels-grid" id="reels-grid"></div>
+        <div class="reels-load-wrap"><button class="outline-btn" id="reels-load-more">Carregar mais projetos ↓</button></div>
+        <div class="reels-footnote"><span>✦</span><div><strong>Pequeno lembrete:</strong> os vídeos escolhidos ficam neste navegador, protegidos pelo cofre local. O Sonora não publica nada automaticamente.</div></div>
+      </section>
+
+      <section class="content-view" id="view-settings">
+        <div class="page-intro"><span class="eyebrow">CONTROLE SEU ESPAÇO</span><h1>Preferências<span class="accent-period">.</span></h1><p>Personalize sua experiência e suas conexões.</p></div>
+        <div class="settings-card"><div><h3>Identificador da API Jamendo</h3><p>O app vem com o ID público de demonstração. Para um uso próprio, gere um ID no portal oficial.</p></div><div class="setting-inline"><input id="jamendo-client-id" placeholder="Seu client_id"><button id="save-api-key" class="outline-btn">Salvar ID</button></div><small>O ID é armazenado apenas neste navegador. Não coloque senhas nem tokens privados aqui.</small></div>
+        <div class="settings-card"><div><h3>Seu algoritmo</h3><p id="algorithm-summary">Ainda estamos aprendendo seu gosto musical.</p></div><button id="reset-algorithm" class="outline-btn">Reiniciar aprendizado</button></div>
+        <div class="settings-card danger-settings"><div><h3>Dados deste navegador</h3><p>As músicas importadas e suas playlists ficam no cofre local. Sair não apaga seus dados.</p></div><button id="delete-account-data" class="outline-btn danger-btn">Apagar conta e dados</button></div>
+      </section>
+    </main>
+
+    <footer class="player-bar">
+      <div class="now-playing"><div class="now-cover" id="now-cover"><span>♫</span></div><div class="now-meta"><strong id="player-title">Escolha uma música</strong><small id="player-artist">Seu próximo som começa aqui</small></div><button id="player-like" class="like-btn" title="Favoritar">♡</button></div>
+      <div class="player-center"><div class="player-controls"><button id="shuffle-btn" class="sub-control" title="Aleatório">⤨</button><button id="prev-btn" class="control-btn" title="Anterior">⏮</button><button id="play-btn" class="play-btn" title="Reproduzir">▶</button><button id="next-btn" class="control-btn" title="Próxima">⏭</button><button id="repeat-btn" class="sub-control" title="Repetir">↻</button></div><div class="timeline"><span id="current-time">0:00</span><input id="seek-bar" type="range" min="0" max="1000" value="0"><span id="total-time">0:00</span></div></div>
+      <div class="player-extra"><span class="volume-icon">◖</span><input id="volume-bar" type="range" min="0" max="1" step="0.01" value="0.8"><button class="queue-btn" id="queue-btn" title="Fila">☷</button></div>
+      <audio id="audio-element" preload="metadata"></audio>
+    </footer>
+  </div>
+
+  <input type="file" id="file-picker" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.opus" multiple hidden>
+  <div id="toast-region" class="toast-region" aria-live="polite"></div>
+
+  <div id="tutorial-overlay" class="tutorial-overlay hidden">
+    <div class="tutorial-backdrop"></div>
+    <div class="tutorial-card" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
+      <div class="tutorial-mascot"><div class="mascot-glow"></div><div class="mascot-face"><span class="mascot-eye eye-left"></span><span class="mascot-eye eye-right"></span><span class="mascot-mouth"></span></div><div class="mascot-star star-one">✦</div><div class="mascot-star star-two">✧</div></div>
+      <div class="tutorial-progress"><span id="tutorial-step-label">COMEÇANDO</span><div id="tutorial-dots"></div><button id="tutorial-skip" class="tutorial-skip">Pular</button></div>
+      <h2 id="tutorial-title">Oi! Eu sou o Lumi.</h2><p id="tutorial-text">Vou mostrar como o Sonora funciona, passo a passo. Não precisa entender de tecnologia: é só acompanhar!</p>
+      <div class="tutorial-tip"><span>✦</span><span id="tutorial-tip-text">Você pode abrir este tutorial novamente tocando no ícone ✧ no topo.</span></div>
+      <div class="tutorial-actions"><button id="tutorial-back" class="ghost-btn hidden">Voltar</button><button id="tutorial-next" class="primary-btn">Vamos lá <span>→</span></button></div>
+    </div>
+  </div>
+
+  <div id="modal-overlay" class="modal-overlay hidden"><div class="modal-card"><button class="modal-close" id="modal-close">×</button><div id="modal-content"></div></div></div>
+  <script src="app.js"></script>
+  <script>if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) { window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {})); }</script>
+</body>
+</html>
